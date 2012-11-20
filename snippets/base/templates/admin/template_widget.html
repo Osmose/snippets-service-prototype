@@ -1,0 +1,30 @@
+<div class="template-data-widget">
+  {{ hidden_input }}
+  <div class="template-data-fields"></div>
+</div>
+
+{% raw %}
+<script id="template-data-editor" type="text/template">
+  <table>
+    <tr>
+      <th>Name</th>
+      <th>Value</th>
+    </tr>
+    {% for name, datum in data %}
+      <tr class="template-data">
+        <td><label class="name">{{ name }}</label></td>
+        <td>
+          {% if datum.type == 0 %}{# Text #}
+            <input class="value text" type="text" value="{{ datum.value }}" />
+          {% elif datum.type == 1 %}{# Image #}
+            <input class="image-upload" type="file" />
+            <br />
+            <img class="preview" src="{{ datum.value }}" />
+            <input class="value" type="hidden" value="{{ datum.value }}" />
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+</script>
+{% endraw %}
