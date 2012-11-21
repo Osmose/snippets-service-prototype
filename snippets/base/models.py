@@ -3,6 +3,7 @@ import json
 from django.db import models
 
 from jingo import env
+from jinja2 import Markup
 
 
 class SnippetTemplate(models.Model):
@@ -40,7 +41,7 @@ class Snippet(models.Model):
     def render(self):
         data = dict([(name, item['value']) for name, item in
                      json.loads(self.data).items()])
-        return env.from_string(self.template.code).render(data)
+        return Markup(env.from_string(self.template.code).render(data))
 
     def __unicode__(self):
         return self.name
@@ -65,3 +66,13 @@ class ClientMatchRule(models.Model):
 
     def __unicode__(self):
         return self.description
+
+
+class SnippetSettings(models.Model):
+    """
+    Stores site-wide settings, such as the global snippet CSS and JS.
+
+    There should only ever be one row in the database.
+    """
+    global_css = models.TextField()
+    global_js = models.TextField()

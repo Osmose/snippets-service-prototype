@@ -4,7 +4,8 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.cache import cache_control
 
 from snippets.base.http import JSONResponse
-from snippets.base.models import SnippetTemplate
+from snippets.base.models import Snippet, SnippetTemplate
+from snippets.base.utils import snippet_settings
 
 
 HTTP_MAX_AGE = getattr(settings, 'SNIPPET_HTTP_MAX_AGE', 1)
@@ -24,3 +25,12 @@ def admin_template_fields(request, template_id):
     fields = [{'name': var.name, 'type': var.type} for var in
               template.snippettemplatevariable_set.all()]
     return JSONResponse(fields)
+
+
+@staff_member_required
+def preview_snippet(request, snippet_id):
+    snippet = get_object_or_404(Snippet, id=snippet_id)
+    return render(request, 'base/preview.html', {
+        'snippet': snippet,
+        'snippet_settings': snippet_settings()
+    })
