@@ -1,0 +1,12 @@
+.template-data-widget {
+    margin-left: 8em;
+}
+
+.template-data-widget .fields {
+    margin-bottom: 2em;
+}
+
+.snippet-preview {
+    height: 600px;
+    width: 600px;
+}

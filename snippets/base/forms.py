@@ -25,5 +25,8 @@ class SnippetAdminForm(forms.ModelForm):
         }
 
     class Media:
+        css = {
+            'all': ('admin/css/template_widget.css',),
+        }
         js = ('admin/js/jquery-1.8.3.min.js', 'admin/js/nunjucks-dev.js',
               'admin/js/template_widget.js',)

@@ -3,32 +3,36 @@
 
     var VARIABLE_URL = '/admin/base/snippettemplate/{{id}}/variables/';
 
-    function TemplateDataWidget(templateSelect, data, dataFields,
-                                dataEditorTemplate) {
+    function TemplateDataWidget(templateSelect, dataWidget) {
         var self = this;
         this.$template = $(templateSelect);
-        this.$data = $(data);
-        this.$dataFields = $(dataFields);
+        this.$dataWidget = $(dataWidget);
+        this.$data = this.$dataWidget.find('input');
+        this.$dataFields = this.$dataWidget.find('.fields');
+        this.snippetPreview = this.$dataWidget.find('.snippet-preview')[0];
 
         this.data = JSON.parse(this.$data.val());
+        this.template = null;
 
-        var tmpl = new nunjucks.Template($(dataEditorTemplate).text());
+        var tmpl = new nunjucks.Template(this.$dataWidget.find('.editor-tmpl').text());
 
         // Whenever the selected template changes, refresh the list of template
         // data to include new variables.
         this.$template.change(function(e) {
             var templateId = self.$template.val();
             $.get(VARIABLE_URL.replace('{{id}}', templateId))
-             .success(function(variables) {
-                for (var k = 0; k < variables.length; k++) {
-                    var variable = variables[k];
+             .success(function(template) {
+                self.template = template;
+
+                for (var k = 0; k < template.fields.length; k++) {
+                    var field = template.fields[k];
 
                     // TODO: Handle case where new variable has the same name as an
                     // existing one, but a different type.
-                    if (!(variable.name in self.data)) {
-                        self.data[variable.name] = {
+                    if (!(field.name in self.data)) {
+                        self.data[field.name] = {
                             value: '',
-                            type: variable.type
+                            type: field.type
                         };
                     }
                 }
@@ -41,6 +45,7 @@
 
         this.$dataFields.on('change keydown', '.text', function(e) {
             self.writeData();
+            self.updatePreview();
         });
 
         this.$dataFields.on('change', '.image-upload', function(e) {
@@ -60,8 +65,13 @@
                 preview.src = e.target.result;
                 $hidden_input.val(e.target.result);
                 self.writeData();
+                self.updatePreview();
             };
             reader.readAsDataURL(file);
+        });
+
+        $(this.snippetPreview).on('load', function() {
+            self.updatePreview();
         });
 
         this.$template.change();
@@ -78,12 +88,29 @@
             });
 
             this.$data.val(JSON.stringify(this.data));
+        },
+
+        updatePreview: function() {
+            this.snippetPreview.contentWindow.postMessage(this.renderSnippet(),
+                                                         '*');
+        },
+
+        renderSnippet: function() {
+            var renderData = {};
+            for (var name in this.data) {
+                renderData[name] = this.data[name].value;
+            }
+
+            if (this.template._tmpl === undefined) {
+                this.template._tmpl = new nunjucks.Template(this.template.code);
+            }
+
+            return this.template._tmpl.render(renderData);
         }
     };
 
     $(function() {
-        var widget = new TemplateDataWidget('#id_template', '#id_data',
-                                            '.template-data-fields',
-                                            '#template-data-editor');
+        var widget = new TemplateDataWidget('#id_template',
+                                            '.template-data-widget');
     });
 })(jQuery, nunjucks);

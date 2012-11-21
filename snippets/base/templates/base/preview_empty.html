@@ -1,0 +1,11 @@
+{% extends 'base/preview.html' %}
+
+{% block site_js %}
+  <script src="{{ static('admin/js/jquery-1.8.3.min.js') }}"></script>
+  <script src="{{ static('base/js/preview_empty.js') }}"></script>
+{% endblock %}
+
+{% block snippets %}
+  {{ snippet_settings.global_css|safe }}
+  <div id="snippet-placeholder"></div>
+{% endblock %}

@@ -3,6 +3,8 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.cache import cache_control
 
+from commonware.response.decorators import xframe_allow
+
 from snippets.base.http import JSONResponse
 from snippets.base.models import Snippet, SnippetTemplate
 from snippets.base.utils import snippet_settings
@@ -17,14 +19,14 @@ def index(request):
 
 
 @staff_member_required
-def admin_template_fields(request, template_id):
-    """
-    Retrieve the fields for an admin template and return them as a JSON blob.
-    """
+def admin_template_json(request, template_id):
+    """Retrieve a snippet template and return it in JSON form."""
     template = get_object_or_404(SnippetTemplate, id=template_id)
-    fields = [{'name': var.name, 'type': var.type} for var in
-              template.snippettemplatevariable_set.all()]
-    return JSONResponse(fields)
+    return JSONResponse({
+        'code': template.code,
+        'fields': [{'name': var.name, 'type': var.type} for var in
+                   template.snippettemplatevariable_set.all()]
+    })
 
 
 @staff_member_required
@@ -34,3 +36,10 @@ def preview_snippet(request, snippet_id):
         'snippet': snippet,
         'snippet_settings': snippet_settings()
     })
+
+
+@staff_member_required
+@xframe_allow
+def preview_empty(request):
+    return render(request, 'base/preview_empty.html',
+                  {'snippet_settings': snippet_settings()})
