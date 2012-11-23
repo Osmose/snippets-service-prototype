@@ -1,0 +1,8 @@
+<div class="snippet-set">
+  {{ snippet_settings.global_css|safe }}
+  {% for snippet in snippets %}
+    {{ snippet.render() }}
+  {% endfor %}
+  {{ snippet_settings.global_js|safe }}
+</div>
+<!-- Content generated at {{ current_time }} -->

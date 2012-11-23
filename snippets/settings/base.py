@@ -20,6 +20,16 @@ INSTALLED_APPS = list(INSTALLED_APPS) + [
     'south',
 ]
 
+MIDDLEWARE_CLASSES = (
+    'multidb.middleware.PinningRouterMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'session_csrf.CsrfMiddleware',  # Must be after auth middleware.
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'commonware.middleware.FrameOptionsHeader',
+)
+
 LOCALE_PATHS = (
     os.path.join(ROOT, PROJECT_MODULE, 'locale'),
 )

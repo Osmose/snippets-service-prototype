@@ -10,6 +10,31 @@ from snippets.base.forms import SnippetAdminForm
 
 class SnippetAdmin(admin.ModelAdmin):
     form = SnippetAdminForm
+    list_display = ('name', 'template', 'channels', 'created', 'modified')
+    list_filter = ('template', 'on_release', 'on_beta', 'on_aurora',
+                   'on_nightly', 'client_match_rules')
+    fieldsets = (
+        (None, {'fields': ('name', 'template', 'data')}),
+        ('Product Channels', {
+            'description': 'What channels will this snippet be available in?',
+            'fields': ('on_release', 'on_beta', 'on_aurora', 'on_nightly'),
+        }),
+        ('Startpage Versions', {
+            'classes': ('collapse',),
+            'fields': ('on_startpage_1', 'on_startpage_2', 'on_startpage_3'),
+        }),
+        ('Extra', {
+            'classes': ('collapse',),
+            'fields': ('product_name', 'client_match_rules'),
+        })
+    )
+
+    def channels(self, instance):
+        channels = []
+        for channel in ['release', 'beta', 'aurora', 'nightly']:
+            if getattr(instance, 'on_{0}'.format(channel), False):
+                channels.append(channel)
+        return ', '.join(channels)
 admin.site.register(models.Snippet, SnippetAdmin)
 
 
