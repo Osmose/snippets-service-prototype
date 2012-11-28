@@ -17,7 +17,8 @@ class SnippetManager(Manager):
         return self.filter(**{
             'on_{0}'.format(client_channel): True,
             'on_startpage_{0}'.format(client_startpage_version): True,
-            'product_name': client.name
+            'product_name': client.name,
+            'locale_set__locale': client.locale
         })
 
 

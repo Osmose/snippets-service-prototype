@@ -3,6 +3,21 @@
 
     var VARIABLE_URL = '/admin/base/snippettemplate/{{id}}/variables/';
 
+    var env = new nunjucks.Environment();
+    env.addFilter('format', function(str) {
+        var replacements = Array.prototype.slice.call(arguments, 1);
+        for (var k = 0; k < replacements.length; k++) {
+            str = str.replace('%s', replacements[k]);
+        }
+        return str;
+    });
+
+    var tmplGlobals = {
+        '_': function(str) {
+            return str;
+        }
+    };
+
     function TemplateDataWidget(templateSelect, dataWidget) {
         var self = this;
         this.$template = $(templateSelect);
@@ -34,16 +49,19 @@
                             value: '',
                             type: field.type
                         };
+                    } else {
+                        self.data[field.name].type = field.type;
                     }
                 }
 
                 self.$dataFields.html(tmpl.render({
                     data: self.data
                 }));
+                self.writeData();
             });
         });
 
-        this.$dataFields.on('change keydown', '.text', function(e) {
+        this.$dataFields.on('change input', '.text', function(e) {
             self.writeData();
             self.updatePreview();
         });
@@ -96,13 +114,14 @@
         },
 
         renderSnippet: function() {
-            var renderData = {};
+            var renderData = Object.create(tmplGlobals);
             for (var name in this.data) {
                 renderData[name] = this.data[name].value;
             }
 
             if (this.template._tmpl === undefined) {
-                this.template._tmpl = new nunjucks.Template(this.template.code);
+                this.template._tmpl = new nunjucks.Template(this.template.code,
+                                                            env);
             }
 
             return this.template._tmpl.render(renderData);

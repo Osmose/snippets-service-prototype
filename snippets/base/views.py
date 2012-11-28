@@ -3,6 +3,7 @@ from time import gmtime, strftime
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import get_object_or_404, render
+from django.utils import translation
 from django.views.decorators.cache import cache_control
 
 from commonware.response.decorators import xframe_allow
@@ -26,6 +27,7 @@ def index(request):
 @access_control(max_age=HTTP_MAX_AGE)
 def fetch_snippets(request, **kwargs):
     client = Client(**kwargs)
+    translation.activate(client.locale)
 
     matching_snippets = Snippet.objects.match_client(client)
     snippet_ids = list(matching_snippets.values_list('id', flat=True))
@@ -49,7 +51,7 @@ def admin_template_json(request, template_id):
     return JSONResponse({
         'code': template.code,
         'fields': [{'name': var.name, 'type': var.type} for var in
-                   template.snippettemplatevariable_set.all()]
+                   template.variable_set.all()]
     })
 
 

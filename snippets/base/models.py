@@ -2,16 +2,24 @@ import json
 import re
 from collections import namedtuple
 
+from django.conf import settings
 from django.db import models
+from django.utils import translation
 
 from jingo import env
 from jinja2 import Markup
+from product_details import product_details
 
 from snippets.base.managers import ClientMatchRuleManager, SnippetManager
 
 
 CHANNELS = ('release', 'beta', 'aurora', 'nightly')
 STARTPAGE_VERSIONS = ('1', '2', '3')
+
+ENGLISH_LANGUAGE_CHOICES = sorted(
+    [(key.lower(), u'{0} ({1})'.format(key, value['English']))
+     for key, value in product_details.languages.items()]
+)
 
 
 Client = namedtuple('Client', ('startpage_version', 'name', 'version',
@@ -20,12 +28,34 @@ Client = namedtuple('Client', ('startpage_version', 'name', 'version',
                                'distribution_version'))
 
 
+class LocaleField(models.CharField):
+    description = ('CharField with locale settings specific to Snippets '
+                   'defaults.')
+
+    def __init__(self, max_length=32, default=settings.LANGUAGE_CODE,
+                 choices=ENGLISH_LANGUAGE_CHOICES, *args, **kwargs):
+        return super(LocaleField, self).__init__(
+            max_length=max_length, default=default, choices=choices,
+            *args, **kwargs)
+
+
 class SnippetTemplate(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
+    slug = models.SlugField(max_length=255, unique=True, null=True)
     code = models.TextField()
 
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
+
+    def extract_translations(self):
+        """
+        Return a slug and set of strings that need to be translated for this
+        template.
+        """
+        slug = 'template-{0}'.format(self.slug)
+        translations = [msg for lineno, func, msg in
+                        env.extract_translations(self.code) if msg]
+        return slug, translations
 
     def __unicode__(self):
         return self.name
@@ -34,14 +64,21 @@ class SnippetTemplate(models.Model):
 class SnippetTemplateVariable(models.Model):
     TEXT = 0
     IMAGE = 1
-    TYPE_CHOICES = ((TEXT, 'Text'), (IMAGE, 'Image'))
+    LOCALIZED_TEXT = 2
+    TYPE_CHOICES = ((TEXT, 'Text'), (LOCALIZED_TEXT, 'Localized Text'),
+                    (IMAGE, 'Image'))
 
-    template = models.ForeignKey(SnippetTemplate)
+    template = models.ForeignKey(SnippetTemplate, related_name='variable_set')
     name = models.CharField(max_length=255)
     type = models.IntegerField(choices=TYPE_CHOICES, default=TEXT)
 
     def __unicode__(self):
         return u'{0}:{1}'.format(self.template.name, self.name)
+
+
+class SnippetTemplateLocale(models.Model):
+    template = models.ForeignKey(SnippetTemplate, related_name='locale_set')
+    locale = LocaleField()
 
 
 class ClientMatchRule(models.Model):
@@ -95,7 +132,8 @@ class ClientMatchRule(models.Model):
 
 
 class Snippet(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
+    slug = models.SlugField(max_length=255, unique=True, null=True)
     template = models.ForeignKey(SnippetTemplate)
     data = models.TextField(default='{}')
 
@@ -125,12 +163,20 @@ class Snippet(models.Model):
 
     objects = SnippetManager()
 
-    def render(self):
+    def render(self, locale=None):
+        current_langauge = False
+        if locale:
+            current_langauge = translation.get_language()
+            translation.activate(locale)
+
         data = dict([(name, Markup(item['value'])) for name, item in
                      json.loads(self.data).items()])
 
         rendered_snippet = '<div data-snippet-id="{0}">{1}</div>'.format(
             self.id, env.from_string(self.template.code).render(data))
+
+        if current_langauge:
+            translation.activate(current_langauge)
         return Markup(rendered_snippet)
 
     def match_client(self, client):
@@ -146,8 +192,25 @@ class Snippet(models.Model):
 
         return True
 
+    def extract_translations(self):
+        """
+        Return a slug and set of strings that need to be translated for this
+        snippet.
+        """
+        slug = 'snippet-{0}'.format(self.slug)
+        data = json.loads(self.data)
+
+        translations = [item['value'] for key, item in data.items() if
+                        item['type'] == SnippetTemplateVariable.LOCALIZED_TEXT]
+        return slug, translations
+
     def __unicode__(self):
         return self.name
+
+
+class SnippetLocale(models.Model):
+    template = models.ForeignKey(Snippet, related_name='locale_set')
+    locale = LocaleField()
 
 
 class SnippetSettings(models.Model):
@@ -158,3 +221,8 @@ class SnippetSettings(models.Model):
     """
     global_css = models.TextField()
     global_js = models.TextField()
+
+
+# South introspection rules for LocaleField
+from south.modelsinspector import add_introspection_rules
+add_introspection_rules([], ['^snippets\.base\.models\.LocaleField'])

@@ -16,13 +16,13 @@
         <tr class="template-data">
           <td><label class="name">{{ name }}</label></td>
           <td>
-            {% if datum.type == 0 %}{# Text #}
-              <input class="value text" type="text" value="{{ datum.value }}" />
+            {% if datum.type == 0 or datum.type == 2 %}{# Text #}
+              <input class="value text" type="text" value="{{ datum.value|escape }}" />
             {% elif datum.type == 1 %}{# Image #}
               <input class="image-upload" type="file" />
               <br />
-              <img class="preview" src="{{ datum.value }}" />
-              <input class="value" type="hidden" value="{{ datum.value }}" />
+              <img class="preview" src="{{ datum.value|escape }}" />
+              <input class="value" type="hidden" value="{{ datum.value|escape }}" />
             {% endif %}
           </td>
         </tr>

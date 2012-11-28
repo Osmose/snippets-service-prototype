@@ -14,6 +14,7 @@ ROOT_URLCONF = '%s.urls' % PROJECT_MODULE
 
 INSTALLED_APPS = list(INSTALLED_APPS) + [
     'snippets.base',
+    'snippets.l10n_utils',
 
     'django.contrib.admin',
 
@@ -34,6 +35,11 @@ LOCALE_PATHS = (
     os.path.join(ROOT, PROJECT_MODULE, 'locale'),
 )
 
+DOTLANG_CACHE = 60
+
+DOTLANG_FILE = 'snippets'  # Used by our custom .lang code
+DOTLANG_FILES = [DOTLANG_FILE]  # Used by l10n_utils
+
 # Because Jinja2 is the default template loader, add any non-Jinja templated
 # apps here:
 JINGO_EXCLUDE_APPS = [
@@ -42,16 +48,5 @@ JINGO_EXCLUDE_APPS = [
 ]
 
 SITE_URL = 'http://localhost:8000'
-
-# Tells the extract script what files to look for L10n in and what function
-# handles the extraction. The Tower library expects this.
-DOMAIN_METHODS['messages'] = [
-    ('%s/**.py' % PROJECT_MODULE,
-        'tower.management.commands.extract.extract_tower_python'),
-    ('%s/**/templates/**.html' % PROJECT_MODULE,
-        'tower.management.commands.extract.extract_tower_template'),
-    ('templates/**.html',
-        'tower.management.commands.extract.extract_tower_template'),
-]
 
 LOGGING = dict(loggers=dict(playdoh={'level': logging.DEBUG}))
